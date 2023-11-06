@@ -69,7 +69,7 @@ function App() {
         // Serialize the modified PDF
         const modifiedPDFBytes = await pdfDoc.save();
 
-        downloadPDF(modifiedPDFBytes, "ModifiedPDF");
+        downloadPDF(modifiedPDFBytes, "Upskill-Classes");
       };
 
       reader.readAsArrayBuffer(file);
