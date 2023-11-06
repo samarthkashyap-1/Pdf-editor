@@ -15,7 +15,7 @@ function App() {
       return;
     }
     createPdf(selectedFile);
-    window.location.reload();
+    setSelectedFile(null)
   };
 
   async function createPdf(file) {
@@ -101,8 +101,18 @@ function App() {
     <>
       <div className="flex flex-col items-center gap-10 mt-52">
         <h2 className="text-3xl text-center font-bold">Upload a PDF</h2>
-        <input type="file" accept=".pdf" onChange={handleFileChange}/>
-        <button onClick={handleUpload} className="bg-red-300 w-fit p-2 text-xl font-semibold rounded-lg text-white">Upload and Process</button>
+        <input
+          type="file"
+          accept=".pdf"
+          onChange={handleFileChange}
+          value={selectedFile ? selectedFile.fileName : ""}
+        />
+        <button
+          onClick={handleUpload}
+          className="bg-red-300 w-fit p-2 text-xl font-semibold rounded-lg text-white"
+        >
+          Upload and Process
+        </button>
       </div>
     </>
   );
