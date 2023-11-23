@@ -63,7 +63,7 @@ function App() {
             "WhatsApp: +91 9654388797              www.upskillclasses.com",
             {
               x:150,
-              y: 30,
+              y: 15,
               size: fontSize,
               font: timesRomanFont,
               color: rgb(0, 0, 0),
