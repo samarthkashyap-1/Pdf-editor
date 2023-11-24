@@ -1,23 +1,39 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState,useRef } from "react";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
 import { ImageBase64 } from "./img.js";
 
 function App() {
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const fileInputRef = useRef(null);
 
   const handleFileChange = (e) => {
-    setSelectedFile(e.target.files[0]);
+    const files = e.target.files;
+    setSelectedFiles(Array.from(files));
+    
   };
 
+  
   const handleUpload = () => {
-    if (!selectedFile) {
-      alert("Please select a PDF file.");
+    if (selectedFiles.length === 0) {
+      alert("Please select at least one PDF file.");
       return;
     }
-    createPdf(selectedFile);
-    setSelectedFile(null)
+    
+    selectedFiles.forEach((file) => {
+    createPdf(file);
+      
+    });
+
+    // Clear selected files
+    setSelectedFiles([]);
+
+     if (fileInputRef.current) {
+       fileInputRef.current.value = "";
+     }
   };
+
+  
 
   async function createPdf(file) {
     try {
@@ -26,29 +42,16 @@ function App() {
         const pdfBytes = event.target.result;
 
         // Base64-encoded header image
-        
-          
-          // const existingPdfBytes = await inputFile.arrayBuffer();
-          
-          const pdfDoc = await PDFDocument.load(pdfBytes);
-          const headerImage = await pdfDoc.embedPng(ImageBase64);
-          const watermarkImage = await pdfDoc.embedPng(
-            ImageBase64
-          );
+        const pdfDoc = await PDFDocument.load(pdfBytes);
+        const headerImage = await pdfDoc.embedPng(ImageBase64);
+        const watermarkImage = await pdfDoc.embedPng(ImageBase64);
 
         // Add header and footer to all pages
-        const [timesRomanFont, firstPage] = await Promise.all([
+        const [timesRomanFont] = await Promise.all([
           pdfDoc.embedFont(StandardFonts.TimesRoman),
-          pdfDoc.getPages(),
         ]);
 
-        const fontSize = 12;
-       
-
         for (const page of pdfDoc.getPages()) {
-         
-
-           
           // Add the header to each page
           page.drawImage(headerImage, {
             x: 485,
@@ -62,69 +65,81 @@ function App() {
           page.drawText(
             "WhatsApp: +91 9654388797              www.upskillclasses.com",
             {
-              x:150,
+              x: 150,
               y: 15,
-              size: fontSize,
+              size: 12,
               font: timesRomanFont,
               color: rgb(0, 0, 0),
             }
           );
         }
+
         const pages = pdfDoc.getPages();
         pages.forEach((page) => {
           const { width, height } = page.getSize();
-          const watermarkDimensions = watermarkImage.scale(0.5); // Adjust the scale as needed
+          const watermarkDimensions = watermarkImage.scale(0.5);
           page.drawImage(watermarkImage, {
             x: width / 2 - watermarkDimensions.width / 2,
             y: height / 2 - watermarkDimensions.height / 2,
             width: watermarkDimensions.width,
             height: watermarkDimensions.height,
             color: rgb(1, 1, 1),
-            opacity: 0.3, // Adjust the color as needed
+            opacity: 0.3,
           });
         });
 
         // Serialize the modified PDF
         const modifiedPDFBytes = await pdfDoc.save();
 
-        downloadPDF(modifiedPDFBytes, "Upskill-Classes");
+        downloadPDF(modifiedPDFBytes, `${file.name}`);
       };
 
       reader.readAsArrayBuffer(file);
-      
     } catch (error) {
       console.error("Error processing PDF:", error);
     }
   }
 
-  function downloadPDF(pdfBytes, fileName) {
+  // ... (previous code)
+
+  function downloadPDF(pdfBytes, originalFileName) {
+    const fileNameWithoutExtension = originalFileName.replace(/\.[^/.]+$/, ""); // Remove the file extension
+    const newFileName = `${fileNameWithoutExtension}-Upskill.pdf`;
+
     const blob = new Blob([pdfBytes], { type: "application/pdf" });
     const url = URL.createObjectURL(blob);
 
     const a = document.createElement("a");
     a.href = url;
-    a.download = fileName;
+    a.download = newFileName;
     document.body.appendChild(a);
     a.click();
 
     // Clean up
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    
   }
 
-  useEffect(() => {
-    // No need to call createPdf here
-  }, []);
+  // ... (remaining code)
+
+
 
   return (
     <>
       <div className="flex flex-col items-center gap-10 mt-52">
-        <h2 className="text-3xl text-center font-bold">Upload a PDF</h2>
+        <h2 className="text-3xl text-center font-bold">Upload PDFs</h2>
         <input
+          ref={fileInputRef}
           type="file"
           accept=".pdf"
           onChange={handleFileChange}
-          value={selectedFile ? selectedFile.fileName : ""}
+          multiple
+          defaultValue={
+            selectedFiles.length > 0
+              ? `${selectedFiles.length} files selected`
+              : ""
+          }
         />
         <button
           onClick={handleUpload}
