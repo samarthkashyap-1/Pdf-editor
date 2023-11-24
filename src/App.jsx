@@ -104,7 +104,7 @@ function App() {
 
   function downloadPDF(pdfBytes, originalFileName) {
     const fileNameWithoutExtension = originalFileName.replace(/\.[^/.]+$/, ""); // Remove the file extension
-    const newFileName = `${fileNameWithoutExtension}-Upskill.pdf`;
+    const newFileName = `${fileNameWithoutExtension}-Upskill-Format.pdf`;
 
     const blob = new Blob([pdfBytes], { type: "application/pdf" });
     const url = URL.createObjectURL(blob);
