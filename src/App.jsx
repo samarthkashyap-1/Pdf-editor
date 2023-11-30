@@ -1,69 +1,71 @@
-import { useEffect, useState,useRef } from "react";
-import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
-
+import React, { useEffect, useState, useRef } from "react";
+import { PDFDocument, StandardFonts, degrees, rgb } from "pdf-lib";
 import { ImageBase64 } from "./img.js";
 
 function App() {
   const [selectedFiles, setSelectedFiles] = useState([]);
+  const [footer, setFooter] = useState("");
+  const [pdfGenerationInProgress, setPdfGenerationInProgress] = useState(false);
   const fileInputRef = useRef(null);
 
   const handleFileChange = (e) => {
     const files = e.target.files;
     setSelectedFiles(Array.from(files));
-    
   };
 
-  
+  const handleRadioChange = (e) => {
+    setFooter(e.target.value);
+  };
+
   const handleUpload = () => {
     if (selectedFiles.length === 0) {
       alert("Please select at least one PDF file.");
       return;
     }
-    
-    selectedFiles.forEach((file) => {
-    createPdf(file);
-      
-    });
 
-    // Clear selected files
-    setSelectedFiles([]);
-
-     if (fileInputRef.current) {
-       fileInputRef.current.value = "";
-     }
+    setPdfGenerationInProgress(true);
   };
 
-  
+  useEffect(() => {
+    if (pdfGenerationInProgress) {
+      selectedFiles.forEach((file) => {
+        createPdf(file, footer);
+      });
 
-  async function createPdf(file) {
+      // Clear selected files
+      setSelectedFiles([]);
+      setPdfGenerationInProgress(false);
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  }, [pdfGenerationInProgress, selectedFiles, footer]);
+
+  async function createPdf(file, selectedFooter) {
     try {
       const reader = new FileReader();
       reader.onload = async (event) => {
         const pdfBytes = event.target.result;
-
-        // Base64-encoded header image
         const pdfDoc = await PDFDocument.load(pdfBytes);
         const headerImage = await pdfDoc.embedPng(ImageBase64);
         const watermarkImage = await pdfDoc.embedPng(ImageBase64);
 
-        // Add header and footer to all pages
         const [timesRomanFont] = await Promise.all([
           pdfDoc.embedFont(StandardFonts.TimesRoman),
         ]);
 
         for (const page of pdfDoc.getPages()) {
-          // Add the header to each page
           page.drawImage(headerImage, {
             x: 485,
-            y: page.getSize().height - 75,
+            y: page.getSize().height - 60,
             width: 100,
-            height: 100,
+            height: 50,
             opacity: 0.8,
           });
 
-          // Add the footer to each page
           page.drawText(
-            "WhatsApp: +91 9654388797              www.upskillclasses.com",
+            `${selectedFooter}              www.upskillclasses.com`,
             {
               x: 150,
               y: 15,
@@ -78,19 +80,19 @@ function App() {
         pages.forEach((page) => {
           const { width, height } = page.getSize();
           const watermarkDimensions = watermarkImage.scale(0.5);
+
           page.drawImage(watermarkImage, {
-            x: width / 2 - watermarkDimensions.width / 2,
-            y: height / 2 - watermarkDimensions.height / 2,
+            x: width / 3.5,
+            y: height / 4,
             width: watermarkDimensions.width,
             height: watermarkDimensions.height,
             color: rgb(1, 1, 1),
-            opacity: 0.3,
+            opacity: 0.1,
+            rotate: degrees(40),
           });
         });
 
-        // Serialize the modified PDF
         const modifiedPDFBytes = await pdfDoc.save();
-
         downloadPDF(modifiedPDFBytes, `${file.name}`);
       };
 
@@ -100,10 +102,8 @@ function App() {
     }
   }
 
-  // ... (previous code)
-
   function downloadPDF(pdfBytes, originalFileName) {
-    const fileNameWithoutExtension = originalFileName.replace(/\.[^/.]+$/, ""); // Remove the file extension
+    const fileNameWithoutExtension = originalFileName.replace(/\.[^/.]+$/, "");
     const newFileName = `${fileNameWithoutExtension}-Upskill-Format.pdf`;
 
     const blob = new Blob([pdfBytes], { type: "application/pdf" });
@@ -115,38 +115,59 @@ function App() {
     document.body.appendChild(a);
     a.click();
 
-    // Clean up
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    
   }
-
-  // ... (remaining code)
-
-
 
   return (
     <>
       <div className="flex flex-col items-center gap-10 mt-52">
         <h2 className="text-3xl text-center font-bold">Upload PDFs</h2>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".pdf"
-          onChange={handleFileChange}
-          multiple
-          defaultValue={
-            selectedFiles.length > 0
-              ? `${selectedFiles.length} files selected`
-              : ""
-          }
-        />
-        <button
-          onClick={handleUpload}
-          className="bg-red-300 w-fit p-2 text-xl font-semibold rounded-lg text-white"
-        >
-          Upload and Process
-        </button>
+        <form action="" className="flex flex-col gap-2 items-center">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf"
+            onChange={handleFileChange}
+            multiple
+            defaultValue={
+              selectedFiles.length > 0
+                ? `${selectedFiles.length} files selected`
+                : ""
+            }
+          />
+          <div className="flex gap-2">
+            <input
+              type="radio"
+              value="WhatsApp: +91 9654388797"
+              id="whatsapp"
+              name="selector"
+              onChange={handleRadioChange}
+              required
+            />
+            <label htmlFor="whatsapp">WhatsApp</label>
+          </div>
+          <div className="flex gap-2">
+            <input
+              type="radio"
+              value="For Classroom only &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
+              id="classroom"
+              name="selector"
+              onChange={handleRadioChange}
+              required
+            />
+            <label htmlFor="classroom">For Classroom only</label>
+          </div>
+          <input
+            type="submit"
+            onClick={handleUpload}
+            className={`bg-red-300 w-fit p-2 text-xl font-semibold rounded-lg text-white ${
+              footer ? "" : "cursor-not-allowed opacity-50"
+            }`}
+            disabled={!footer}
+            value=" Upload and Process"
+          />
+        </form>
       </div>
     </>
   );
