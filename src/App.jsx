@@ -4,7 +4,7 @@ import { ImageBase64 } from "./img.js";
 
 function App() {
   const [selectedFiles, setSelectedFiles] = useState([]);
-  const [footer, setFooter] = useState("");
+  const [footer, setFooter] = useState("WhatsApp: +91 9654388797");
   const [pdfGenerationInProgress, setPdfGenerationInProgress] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -144,6 +144,7 @@ function App() {
               name="selector"
               onChange={handleRadioChange}
               required
+              defaultChecked
             />
             <label htmlFor="whatsapp">WhatsApp</label>
           </div>
