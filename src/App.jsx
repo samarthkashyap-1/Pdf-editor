@@ -1,175 +1,170 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useState } from "react";
 import { PDFDocument, StandardFonts, degrees, rgb } from "pdf-lib";
+
 import { ImageBase64 } from "./img.js";
 
-function App() {
-  const [selectedFiles, setSelectedFiles] = useState([]);
-  const [footer, setFooter] = useState("WhatsApp: +91 9654388797");
-  const [pdfGenerationInProgress, setPdfGenerationInProgress] = useState(false);
-  const fileInputRef = useRef(null);
+// Provide the correct path
+
+const Pdfmodifier = () => {
+  const [selectedPdf, setSelectedPdf] = useState(null);
+  const [footerText, setFooterText] = useState("WhatsApp: +91 9654388797");
+  const [resultPdf, setResultPdf] = useState(null);
 
   const handleFileChange = (e) => {
     const files = e.target.files;
-    setSelectedFiles(Array.from(files));
+    setSelectedPdf(Array.from(files));
+  };
+  const handleFooterTextChange = (event) => {
+    setFooterText(event.target.value);
   };
 
-  const handleRadioChange = (e) => {
-    setFooter(e.target.value);
-  };
-
-  const handleUpload = () => {
-    if (selectedFiles.length === 0) {
-      alert("Please select at least one PDF file.");
+  const addHeaderFooterToPdf = async () => {
+    if (!selectedPdf) {
+      alert("Please select a PDF file");
       return;
     }
 
-    setPdfGenerationInProgress(true);
-  };
+    const modifiedPdfs = [];
 
-  useEffect(() => {
-    if (pdfGenerationInProgress) {
-      selectedFiles.forEach((file) => {
-        createPdf(file, footer);
-      });
+    for (const file of selectedPdf) {
+      const pdfBytes = await file.arrayBuffer();
+      const pdfDoc = await PDFDocument.load(pdfBytes);
+      const pages = pdfDoc.getPages();
 
-      // Clear selected files
-      setSelectedFiles([]);
-      setPdfGenerationInProgress(false);
+      const defaultHeaderImageEmbed = await pdfDoc.embedPng(ImageBase64);
+      const watermarkImage = await pdfDoc.embedPng(ImageBase64);
 
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    }
-  }, [pdfGenerationInProgress, selectedFiles, footer]);
+      pages.forEach((page) => {
+        const { width, height } = page.getSize();
 
-  async function createPdf(file, selectedFooter) {
-    try {
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        const pdfBytes = event.target.result;
-        const pdfDoc = await PDFDocument.load(pdfBytes);
-        const headerImage = await pdfDoc.embedPng(ImageBase64);
-        const watermarkImage = await pdfDoc.embedPng(ImageBase64);
-
-        const [timesRomanFont] = await Promise.all([
-          pdfDoc.embedFont(StandardFonts.TimesRoman),
-        ]);
-
-        for (const page of pdfDoc.getPages()) {
-          page.drawImage(headerImage, {
-            x: 485,
-            y: page.getSize().height - 60,
-            width: 100,
-            height: 50,
-            opacity: 0.8,
-          });
-
-          page.drawText(
-            `${selectedFooter}              www.upskillclasses.com`,
-            {
-              x: 150,
-              y: 15,
-              size: 12,
-              font: timesRomanFont,
-              color: rgb(0, 0, 0),
-            }
-          );
-        }
-
-        const pages = pdfDoc.getPages();
-        pages.forEach((page) => {
-          const { width, height } = page.getSize();
-          const watermarkDimensions = watermarkImage.scale(0.5);
-
-          page.drawImage(watermarkImage, {
-            x: width / 3.5,
-            y: height / 4,
-            width: watermarkDimensions.width,
-            height: watermarkDimensions.height,
-            color: rgb(1, 1, 1),
-            opacity: 0.1,
-            rotate: degrees(40),
-          });
+        // Add default header image
+        page.drawImage(defaultHeaderImageEmbed, {
+          x: 485,
+          y: page.getSize().height - 60,
+          width: 100,
+          height: 50,
+          opacity: 0.8,
         });
 
-        const modifiedPDFBytes = await pdfDoc.save();
-        downloadPDF(modifiedPDFBytes, `${file.name}`);
-      };
+        // Add footer text
+        page.drawText(`${footerText}              www.upskillclasses.com`, {
+          x: 150,
+          y: 15,
+          size: 12,
+          color: rgb(0, 0, 0),
+        });
+      });
 
-      reader.readAsArrayBuffer(file);
-    } catch (error) {
-      console.error("Error processing PDF:", error);
+      pages.forEach((page) => {
+        const { width, height } = page.getSize();
+        const watermarkDimensions = watermarkImage.scale(0.5);
+
+        page.drawImage(watermarkImage, {
+          x: width / 3.5,
+          y: height / 4,
+          width: watermarkDimensions.width,
+          height: watermarkDimensions.height,
+          color: rgb(1, 1, 1),
+          opacity: 0.1,
+          rotate: degrees(40),
+        });
+      });
+
+      const modifiedPdfBytes = await pdfDoc.save();
+      modifiedPdfs.push(
+        new Blob([modifiedPdfBytes], { type: "application/pdf" })
+      );
     }
-  }
 
-  function downloadPDF(pdfBytes, originalFileName) {
-    const fileNameWithoutExtension = originalFileName.replace(/\.[^/.]+$/, "");
-    const newFileName = `${fileNameWithoutExtension}-Upskill-Format.pdf`;
+    setResultPdf(modifiedPdfs);
+  };
 
-    const blob = new Blob([pdfBytes], { type: "application/pdf" });
-    const url = URL.createObjectURL(blob);
+  const downloadAllPdf = () => {
+    if (resultPdf.length === 0) {
+      alert("No modified PDFs to download");
+      return;
+    }
 
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = newFileName;
-    document.body.appendChild(a);
-    a.click();
-
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }
+    resultPdf.forEach((pdf, index) => {
+      const fileNameWithoutExtension = selectedPdf[index].name.replace(
+        /\.[^/.]+$/,
+        ""
+      );
+      const newFileName = `${fileNameWithoutExtension}-Upskill-Format.pdf`;
+      const downloadLink = document.createElement("a");
+      downloadLink.href = URL.createObjectURL(pdf);
+      downloadLink.download = newFileName;
+      downloadLink.click();
+    });
+    window.location.reload();
+  };
 
   return (
-    <>
-      <div className="flex flex-col items-center gap-10 mt-52">
-        <h2 className="text-3xl text-center font-bold">Upload PDFs</h2>
-        <form action="" className="flex flex-col gap-2 items-center">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".pdf"
-            onChange={handleFileChange}
-            multiple
-            defaultValue={
-              selectedFiles.length > 0
-                ? `${selectedFiles.length} files selected`
-                : ""
-            }
-          />
-          <div className="flex gap-2">
-            <input
-              type="radio"
-              value="WhatsApp: +91 9654388797"
-              id="whatsapp"
-              name="selector"
-              onChange={handleRadioChange}
-              required
-              defaultChecked
-            />
-            <label htmlFor="whatsapp">WhatsApp</label>
-          </div>
-          <div className="flex gap-2">
-            <input
-              type="radio"
-              value="For Classroom only &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
-              id="classroom"
-              name="selector"
-              onChange={handleRadioChange}
-              required
-            />
-            <label htmlFor="classroom">For Classroom only</label>
-          </div>
-          <input
-            type="submit"
-            onClick={handleUpload}
-            className={`bg-red-500 w-fit p-2 text-xl font-semibold rounded-lg text-white `}
-            disabled={!footer}
-            value=" Upload and Process"
-          />
-        </form>
-      </div>
-    </>
-  );
-}
+    <div className="max-w-2xl mx-auto my-8 p-4 bg-gray-100 rounded-md">
+      <h2 className="text-2xl font-bold mb-4">Upskill Pdf Modifier</h2>
 
-export default App;
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700">
+          Select PDF file:
+        </label>
+        <input
+          type="file"
+          multiple
+          accept=".pdf"
+          onChange={handleFileChange}
+          className="mt-1 p-2 border rounded-md w-full"
+        />
+      </div>
+
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700">
+          Select Footer Text:
+        </label>
+        <div className="flex items-center">
+          <input
+            type="radio"
+            id="whatsapp"
+            value="WhatsApp: +91 9654388797"
+            checked={footerText === "WhatsApp: +91 9654388797"}
+            onChange={handleFooterTextChange}
+            className="mr-2"
+          />
+          <label htmlFor="whatsapp" className="mr-4">
+            WhatsApp
+          </label>
+
+          <input
+            type="radio"
+            id="classroom"
+            value="For classroom only"
+            checked={footerText === "For classroom only"}
+            onChange={handleFooterTextChange}
+            className="mr-2"
+          />
+          <label htmlFor="classroom">For classroom only</label>
+        </div>
+      </div>
+
+      <button
+        onClick={() => {
+          addHeaderFooterToPdf();
+        }}
+        className="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600"
+      >
+        Upload PDF
+      </button>
+      {resultPdf && (
+        <button
+          onClick={() => {
+            downloadAllPdf();
+          }}
+          className="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 ml-4"
+        >
+          Download PDF
+        </button>
+      )}
+    </div>
+  );
+};
+
+export default Pdfmodifier;
