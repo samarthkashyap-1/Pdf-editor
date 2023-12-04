@@ -162,9 +162,7 @@ function App() {
           <input
             type="submit"
             onClick={handleUpload}
-            className={`bg-red-300 w-fit p-2 text-xl font-semibold rounded-lg text-white ${
-              footer ? "" : "cursor-not-allowed opacity-50"
-            }`}
+            className={`bg-red-500 w-fit p-2 text-xl font-semibold rounded-lg text-white `}
             disabled={!footer}
             value=" Upload and Process"
           />
