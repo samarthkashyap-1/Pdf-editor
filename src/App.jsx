@@ -6,8 +6,9 @@ import { ImageBase64 } from "./img.js";
 // Provide the correct path
 
 const Pdfmodifier = () => {
+  const number = import.meta.env.VITE_REACT_APP_NUMBER;
   const [selectedPdf, setSelectedPdf] = useState(null);
-  const [footerText, setFooterText] = useState("WhatsApp: +91 9654388797");
+  const [footerText, setFooterText] = useState(`WhatsApp: ${number}`);
   const [resultPdf, setResultPdf] = useState(null);
 
   const handleFileChange = (e) => {
@@ -124,8 +125,8 @@ const Pdfmodifier = () => {
           <input
             type="radio"
             id="whatsapp"
-            value="WhatsApp: +91 9654388797"
-            checked={footerText === "WhatsApp: +91 9654388797"}
+            value={`WhatsApp: ${number}`}
+            checked={footerText === `WhatsApp: ${number}`}
             onChange={handleFooterTextChange}
             className="mr-2"
           />
