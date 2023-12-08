@@ -67,7 +67,7 @@ const Pdfmodifier = () => {
           width: watermarkDimensions.width,
           height: watermarkDimensions.height,
           color: rgb(1, 1, 1),
-          opacity: 0.3,
+          opacity: 0.2,
           rotate: degrees(40),
         });
       });
