@@ -41,17 +41,17 @@ const Pdfmodifier = () => {
 
         // Add default header image
         page.drawImage(defaultHeaderImageEmbed, {
-          x: 485,
+          x: 475,
           y: page.getSize().height - 60,
           width: 100,
-          height: 50,
+          height: 40,
           opacity: 0.8,
         });
 
         // Add footer text
         page.drawText(`${footerText}              www.upskillclasses.com`, {
           x: 150,
-          y: 15,
+          y: 30,
           size: 12,
           color: rgb(0, 0, 0),
         });
