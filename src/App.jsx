@@ -51,7 +51,7 @@ const Pdfmodifier = () => {
         // Add footer text
         page.drawText(`${footerText}              www.upskillclasses.com`, {
           x: 150,
-          y: 30,
+          y: 15,
           size: 12,
           color: rgb(0, 0, 0),
         });
