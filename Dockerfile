@@ -11,5 +11,7 @@ RUN npm run build
 
 RUN npm install -g serve
 
-ENV PORT=5173
-CMD ["serve", "-s", "dist", "-l", "5173"]
+# Cloud Run will override this anyway, but safe to keep
+ENV PORT=8080
+
+CMD ["sh", "-c", "serve -s dist -l $PORT"]
